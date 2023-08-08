@@ -1,0 +1,123 @@
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath 'org.owasp:dependency-check-gradle:8.2.1'
+	}
+}
+
+plugins {
+	id 'java'
+	id 'maven-publish'
+	id 'signing'
+}
+
+apply plugin: 'org.owasp.dependencycheck'
+
+group = 'com.dbmasker'
+version = '0.0.4'
+sourceCompatibility = '17'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.apache.commons:commons-jexl3:3.2.1'
+	implementation 'com.github.jsqlparser:jsqlparser:4.6'
+
+	testImplementation files('lib/jsqlparser-4.5.jar')
+	testImplementation files('lib/x-pack-sql-jdbc-8.6.2.jar')
+	testImplementation files('lib/sqlite-jdbc-3.41.2.1.jar')
+	testImplementation files('lib/kingbase8-8.6.0.jar')
+	testImplementation files('lib/DmJdbcDriver18-8.1.2.192.jar')
+	testImplementation files('lib/gbase-connector-java-8.3.81.53-build52.8-bin.jar')
+	testImplementation files('lib/gbasedbtjdbc_3.3.0_3.jar')
+	testImplementation files('lib/ifxjdbc.jar')
+	testImplementation files('lib/mariadb-java-client-3.1.3.jar')
+	testImplementation files('lib/mysql-connector-j-8.0.32.jar')
+
+	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
+	testImplementation 'org.apache.hive:hive-jdbc:3.1.3'
+	testImplementation 'org.postgresql:postgresql:42.5.4'
+	testImplementation 'com.microsoft.sqlserver:mssql-jdbc:12.2.0.jre11'
+	testImplementation 'org.apache.phoenix:phoenix-queryserver-client:4.14.3-HBase-1.4'
+	testImplementation 'com.oracle.database.xml:xmlparserv2:23.2.0.0'
+	testImplementation 'com.oracle.database.jdbc:ojdbc11:23.2.0.0'
+	testImplementation 'com.oracle.ojdbc:xdb:19.3.0.0'
+}
+
+configurations {
+	all {
+		exclude group: 'org.apache.hive', module: 'org.apache.logging.log4j'
+		exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+		exclude group: 'ch.qos.logback', module: 'logback-classic'
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+jar {
+	archiveBaseName = 'dbmasker' // 项目的名称
+	archiveVersion = '0.0.4' // 项目的版本
+}
+
+java {
+	withSourcesJar()
+	withJavadocJar()
+}
+
+publishing {
+	repositories {
+		maven {
+			url "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+			credentials {
+				username = nexusUsername
+				password = nexusPassword
+			}
+		}
+	}
+	publications {
+		mavenJava(MavenPublication) {
+			from components.java
+
+			groupId 'io.github.clarkdian' // 项目的 Group ID
+			artifactId 'dbmasker' // 项目的 Artifact ID
+			version '0.0.4' // 项目的版本
+
+			pom {
+				name = 'dbmasker'
+				description = 'DBMasker is an open-source Java project for mainstream database systems, aiming to provide a unified and secure access interface.'
+				url = 'https://github.com/clarkdian/DBMasker'
+				licenses {
+					license {
+						name = 'The Apache License, Version 2.0'
+						url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+					}
+				}
+				developers {
+					developer {
+						id = 'clark'
+						name = 'Lee Clark'
+						email = 'clarkdian@163.com'
+					}
+				}
+				scm {
+					connection = 'scm:git:https://github.com/clarkdian/DBMasker'
+					developerConnection = 'scm:git:ssh://github.com/clarkdian/DBMasker.git'
+					url = 'https://github.com/clarkdian/DBMasker'
+				}
+			}
+		}
+	}
+}
+
+signing {
+	sign publishing.publications.mavenJava
+}
+
