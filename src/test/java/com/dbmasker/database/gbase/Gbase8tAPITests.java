@@ -304,10 +304,10 @@ class Gbase8tAPITests {
     void testGetPrimaryKeys() throws SQLException, ClassNotFoundException {
         createTable(connection, dbType);
 
-        List<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "", "employees");
+        Set<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "", "employees");
         Assertions.assertEquals(1, tablePrimaryKeys.size());
 
-        List<String> expectPrimaryKeys = new ArrayList<>();
+        Set<String> expectPrimaryKeys = new HashSet<>();
         expectPrimaryKeys.add("id");
 
         Assertions.assertEquals(expectPrimaryKeys, tablePrimaryKeys);

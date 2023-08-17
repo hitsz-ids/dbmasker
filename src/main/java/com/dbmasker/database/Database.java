@@ -92,10 +92,10 @@ public interface Database {
      * @param connection A valid database connection.
      * @param schemaName The specified schema name.
      * @param table The specified table name.
-     * @return Returns a list of primary key column names for the specified table.
+     * @return Returns a Set of primary key column names for the specified table.
      * @throws SQLException if a database access error occurs
      */
-    List<String> getPrimaryKeys(Connection connection, String schemaName, String table) throws SQLException;
+    Set<String> getPrimaryKeys(Connection connection, String schemaName, String table) throws SQLException;
 
     /**
      * Retrieves the unique keys of a specified database table.

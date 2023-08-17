@@ -213,11 +213,11 @@ public abstract class BaseDatabase implements Database {
      * @param connection A valid database connection.
      * @param schemaName The specified schema name.
      * @param table The specified table name.
-     * @return Returns a list of primary key column names for the specified table.
+     * @return Returns a Set of primary key column names for the specified table.
      * @throws SQLException if a database access error occurs
      */
     @Override
-    public List<String> getPrimaryKeys(Connection connection, String schemaName, String table) throws SQLException {
+    public Set<String> getPrimaryKeys(Connection connection, String schemaName, String table) throws SQLException {
         return getPrimaryKeys(connection, null, schemaName, table);
     }
 
@@ -228,10 +228,10 @@ public abstract class BaseDatabase implements Database {
      * @param catalog  a catalog name， must match the catalog name as it is stored in the database;
      * @param schemaName The specified schema name.
      * @param table The specified table name.
-     * @return Returns a list of primary key column names for the specified table.
+     * @return Returns a Set of primary key column names for the specified table.
      * @throws SQLException if a database access error occurs
      */
-    public List<String> getPrimaryKeys(Connection connection, String catalog, String schemaName, String table) throws SQLException {
+    public Set<String> getPrimaryKeys(Connection connection, String catalog, String schemaName, String table) throws SQLException {
         // Get metadata from the connection
         DatabaseMetaData metaData = connection.getMetaData();
 
@@ -240,7 +240,7 @@ public abstract class BaseDatabase implements Database {
         ResultSet primaryKeyResultSet = metaData.getPrimaryKeys(catalog, schemaName, table);
 
         // Iterate through the ResultSet and add each primary key to the list
-        List<String> primaryKeys = new ArrayList<>();
+        Set<String> primaryKeys = new HashSet<>();
         while (primaryKeyResultSet.next()) {
             primaryKeys.add(primaryKeyResultSet.getString("COLUMN_NAME"));
         }
@@ -475,7 +475,6 @@ public abstract class BaseDatabase implements Database {
     public List<List<Map<String, Object>>> executeQuerySQLBatch(Connection connection, List<String> sqlList) throws SQLException {
         List<List<Map<String, Object>>> batchResult = new ArrayList<>();
 
-        // Use try-with-resources to ensure proper resource management
         try {
             // Iterate through the SQL query list
             for (String sql : sqlList) {

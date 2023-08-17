@@ -6,7 +6,9 @@ import com.dbmasker.utils.ErrorMessages;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Phoenix Database class implements the Database interface for Phoenix databases.
@@ -100,4 +102,44 @@ public class Phoenix extends BaseDatabase {
         throw new SQLFeatureNotSupportedException("Phoenix does not support functions");
     }
 
+
+    /**
+     * Retrieves the primary keys of a specified table within the given schema.
+     *
+     * @param connection A valid database connection.
+     * @param schemaName The specified schema name.
+     * @param table The specified table name.
+     * @return Returns a Set of primary key column names for the specified table.
+     * @throws SQLException if a database access error occurs
+     */
+    @Override
+    public Set<String> getPrimaryKeys(Connection connection, String schemaName, String table) throws SQLException {
+        Set<String> primaryKeys = new HashSet<>();
+
+        // Use a query to get the primary key column from the SYSTEM.CATALOG table for the given table and schema
+        String sql = "SELECT COLUMN_NAME " +
+                "FROM SYSTEM.CATALOG " +
+                "WHERE TABLE_SCHEM = ? " +
+                "AND TABLE_NAME = ? " +
+                "AND COLUMN_FAMILY IS NULL " +  // Primary key columns have NULL COLUMN_FAMILY
+                "AND KEY_SEQ IS NOT NULL " +    // Indicates the column is part of the primary key
+                "ORDER BY KEY_SEQ";             // Order by the key sequence to get the first part of compound primary key if any
+
+        // try-with-resources block ensures that both the PreparedStatement and ResultSet are closed automatically
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+            // Set parameters for the PreparedStatement to prevent SQL injection
+            preparedStatement.setString(1, schemaName);
+            preparedStatement.setString(2, table);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+
+                // Loop over the resultSet to get all primary key columns
+                while (resultSet.next()) {
+                    primaryKeys.add(resultSet.getString("COLUMN_NAME"));
+                }
+            }
+        }
+        return primaryKeys;
+    }
 }

@@ -48,8 +48,8 @@ class DMDialectAPITests {
 
     public void createSchema(Connection connection, String dbType) throws SQLException {
         String sql = """
-                 CREATE SCHEMA my_schema;
-                 CREATE TABLE my_schema.mytable (
+                 CREATE SCHEMA MY_SCHEMA;
+                 CREATE TABLE MY_SCHEMA.mytable (
                       myint INT,
                       myinteger INTEGER,
                       mysmallint SMALLINT,
@@ -77,9 +77,32 @@ class DMDialectAPITests {
         DBManager.executeUpdateSQL(connection, dbType, sql);
     }
 
+    public void createSchema1(Connection connection, String dbType) throws SQLException {
+        String sql = """
+                 CREATE SCHEMA MY_SCHEMA;
+                 CREATE TABLE MY_SCHEMA.EMPLOYEES (
+                    id INTEGER PRIMARY KEY,
+                    first_name VARCHAR(255) NOT NULL,
+                    last_name VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    age INTEGER,
+                    UNIQUE (first_name, last_name)
+                 );
+                 """;
+        DBManager.executeUpdateSQL(connection, dbType, sql);
+    }
+
+    public void insertData1(Connection connection, String dbType) throws SQLException {
+        String sql = """
+                INSERT INTO MY_SCHEMA.EMPLOYEES (id, first_name, last_name, email, age)
+                VALUES (1, 'John', 'Doe', 'john.doe@example.com', 30);
+                """;
+        DBManager.executeUpdateSQL(connection, dbType, sql);
+    }
+
     public void insertData(Connection connection, String dbType) throws SQLException {
         String sql = """
-                INSERT INTO my_schema.mytable (
+                INSERT INTO MY_SCHEMA.mytable (
                        myint,  -- myint
                        myinteger,  -- myinteger
                        mysmallint,  -- mysmallint
@@ -277,4 +300,204 @@ class DMDialectAPITests {
         Assertions.assertNull(result.get(3).get("MYTIMESTAMP"));
     }
 
+    @Test
+    void testGenerateUpdateSql() throws SQLException {
+        createSchema1(connection, dbType);
+        insertData1(connection, dbType);
+
+        Map<String, Object> setData = new HashMap<>();
+        setData.put("age", 100);
+        Map<String, Object> whereData = new HashMap<>();
+        whereData.put("id", 1);
+        whereData.put("first_name", "John");
+        whereData.put("last_name", "Doe");
+        String sql = DBDialectManager.generateUpdateSql(connection, dbType, "MY_SCHEMA", "EMPLOYEES", setData, whereData, true);
+        String expectSQL = "UPDATE MY_SCHEMA.EMPLOYEES SET age = 100  WHERE id = 1;";
+        Assertions.assertEquals(expectSQL, sql);
+        DBManager.executeSQLScript(connection, dbType, sql);
+
+        List<Map<String, Object>> result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(1, result.size());
+        Assertions.assertEquals(100, result.get(0).get("AGE"));
+        Assertions.assertEquals(1, result.get(0).get("ID"));
+
+        setData.put("age", 10);
+        whereData = new HashMap<>();
+        whereData.put("first_name", "John");
+        whereData.put("last_name", "Doe");
+        whereData.put("email", "john.doe@example.com");
+        sql = DBDialectManager.generateUpdateSql(connection, dbType, "MY_SCHEMA", "EMPLOYEES", setData, whereData, true);
+        expectSQL = "UPDATE MY_SCHEMA.EMPLOYEES SET age = 10  WHERE last_name = 'Doe' AND first_name = 'John';";
+        Assertions.assertEquals(expectSQL, sql);
+        DBManager.executeSQLScript(connection, dbType, sql);
+
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(1, result.size());
+        Assertions.assertEquals(10, result.get(0).get("AGE"));
+        Assertions.assertEquals(1, result.get(0).get("ID"));
+
+        setData.put("age", 99);
+        whereData = new HashMap<>();
+        whereData.put("first_name", "John");
+        whereData.put("email", "john.doe@example.com");
+        whereData.put("age", 10);
+        sql = DBDialectManager.generateUpdateSql(connection, dbType, "MY_SCHEMA", "EMPLOYEES", setData, whereData, true);
+        expectSQL = "UPDATE MY_SCHEMA.EMPLOYEES SET age = 99  WHERE first_name = 'John' AND email = 'john.doe@example.com' AND age = 10;";
+        Assertions.assertEquals(expectSQL, sql);
+        DBManager.executeSQLScript(connection, dbType, sql);
+
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(1, result.size());
+        Assertions.assertEquals(99, result.get(0).get("AGE"));
+        Assertions.assertEquals(1, result.get(0).get("ID"));
+
+        setData.put("age", 98);
+        sql = DBDialectManager.generateUpdateSql(connection, dbType, "MY_SCHEMA", "EMPLOYEES", setData, whereData, true);
+        DBManager.executeSQLScript(connection, dbType, sql);
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(1, result.size());
+        Assertions.assertEquals(99, result.get(0).get("AGE"));
+
+        whereData = null;
+        sql = DBDialectManager.generateUpdateSql(connection, dbType, "MY_SCHEMA", "EMPLOYEES", setData, whereData, true);
+        Assertions.assertNull(sql);
+    }
+
+    @Test
+    void testGenerateUpdateSql1() throws SQLException {
+        insertData(connection, dbType);
+
+        Map<String, Object> setData = new HashMap<>();
+        setData.put("MyInt", 100);
+        setData.put("MyChar", "char'50'");
+        setData.put("MyBlob", "Masker");
+        setData.put("MyTimestamp", "2024-01-01 00:00:00");
+        setData.put("MyTime", "00:00:00");
+        setData.put("MyDate", "2024-01-01");
+        setData.put("MyClob", "Masker");
+        setData.put("MySmallInt", null);
+
+        Map<String, Object> whereData = new HashMap<>();
+        whereData.put("MyInteger", 2);
+
+        String sql = DBDialectManager.generateUpdateSql(connection, dbType, "MY_SCHEMA", "MYTABLE", setData, whereData, true);
+        DBManager.executeSQLScript(connection, dbType, sql);
+        List<Map<String, Object>> result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "MYTABLE");
+        Assertions.assertEquals(1, result.size());
+        Assertions.assertEquals(100, result.get(0).get("MYINT"));
+        Assertions.assertEquals(String.format("%-10s", "char'50'"), result.get(0).get("MYCHAR"));
+        DmdbBlob blob = (DmdbBlob)result.get(0).get("MYBLOB");
+        Assertions.assertEquals("Masker", new String(blob.getBytes(1, (int)blob.length())));
+
+        Assertions.assertEquals("2024-01-01 00:00:00.0", result.get(0).get("MYTIMESTAMP").toString());
+        Assertions.assertEquals("00:00:00", result.get(0).get("MYTIME").toString());
+        Assertions.assertEquals("2024-01-01", result.get(0).get("MYDATE").toString());
+        DmdbNClob clob = (DmdbNClob)result.get(0).get("MYCLOB");
+        Assertions.assertEquals("Masker", clob.getSubString(1, (int)clob.length()));
+        Assertions.assertNull(result.get(0).get("MYSMALLINT"));
+
+        setData = new HashMap<>();
+        setData.put("MyInt", 999);
+
+        whereData = new HashMap<>();
+        whereData.put("MyInteger", 2);
+        whereData.put("MyChar", "char'50'");
+        whereData.put("MyTimestamp", "2024-01-01 00:00:00");
+        whereData.put("MyTime", "00:00:00");
+        whereData.put("MyDate", "2024-01-01");
+        whereData.put("MyClob", "Masker");
+        whereData.put("MySmallInt", null);
+
+        sql = DBDialectManager.generateUpdateSql(connection, dbType, "MY_SCHEMA", "MYTABLE", setData, whereData, false);
+        DBManager.executeSQLScript(connection, dbType, sql);
+
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "MYTABLE");
+        Assertions.assertEquals(1, result.size());
+        Assertions.assertEquals(999, result.get(0).get("MYINT"));
+    }
+
+    @Test
+    void testGenerateDeleteSql() throws SQLException, ClassNotFoundException {
+        createSchema1(connection, dbType);
+        insertData1(connection, dbType);
+
+        Map<String, Object> whereData = new HashMap<>();
+        whereData.put("id", 1);
+        whereData.put("first_name", "John");
+        whereData.put("last_name", "Doe");
+        String sql = DBDialectManager.generateDeleteSql(connection, dbType, "MY_SCHEMA", "EMPLOYEES", whereData, true);
+        String expectSQL = "DELETE FROM MY_SCHEMA.EMPLOYEES WHERE id = 1;";
+        Assertions.assertEquals(expectSQL, sql);
+        DBManager.executeSQLScript(connection, dbType, sql);
+
+        List<Map<String, Object>> result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(0, result.size());
+
+        insertData1(connection, dbType);
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(1, result.size());
+
+        whereData = new HashMap<>();
+        whereData.put("first_name", "John");
+        whereData.put("last_name", "Doe");
+        whereData.put("email", "john.doe@example.com");
+
+        sql = DBDialectManager.generateDeleteSql(connection, dbType, "MY_SCHEMA", "EMPLOYEES", whereData, true);
+        expectSQL = "DELETE FROM MY_SCHEMA.EMPLOYEES WHERE last_name = 'Doe' AND first_name = 'John';";
+        Assertions.assertEquals(expectSQL, sql);
+        DBManager.executeSQLScript(connection, dbType, sql);
+
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(0, result.size());
+
+        insertData1(connection, dbType);
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(1, result.size());
+
+        whereData = new HashMap<>();
+        whereData.put("first_name", "John");
+        whereData.put("email", "john.doe@example.com");
+        whereData.put("age", 30);
+
+        sql = DBDialectManager.generateDeleteSql(connection, dbType, "MY_SCHEMA", "EMPLOYEES", whereData, true);
+        expectSQL = "DELETE FROM MY_SCHEMA.EMPLOYEES WHERE first_name = 'John' AND email = 'john.doe@example.com' AND age = 30;";
+        Assertions.assertEquals(expectSQL, sql);
+        DBManager.executeSQLScript(connection, dbType, sql);
+
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(0, result.size());
+
+        insertData1(connection, dbType);
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(1, result.size());
+
+        whereData.put("age", 31);
+        sql = DBDialectManager.generateDeleteSql(connection, dbType, "MY_SCHEMA", "EMPLOYEES", whereData, true);
+        DBManager.executeSQLScript(connection, dbType, sql);
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(1, result.size());
+
+        whereData = null;
+        sql = DBDialectManager.generateDeleteSql(connection, dbType, "MY_SCHEMA", "EMPLOYEES", whereData, true);
+        Assertions.assertNull(sql);
+
+        tearDown();
+        setUp();
+        insertData(connection, dbType);
+
+        whereData = new HashMap<>();
+        whereData.put("MyInteger", 2);
+        whereData.put("MyChar", "char");
+        whereData.put("MyTimestamp", "2023-01-01 13:14:15");
+        whereData.put("MyTime", "13:14:15");
+        whereData.put("MyDate", "2023-01-01");
+        whereData.put("MyClob", "This is CLOB data");
+        whereData.put("MySmallInt", 3);
+
+        sql = DBDialectManager.generateDeleteSql(connection, dbType, "MY_SCHEMA", "MYTABLE", whereData, false);
+        DBManager.executeSQLScript(connection, dbType, sql);
+
+        result = DBManager.getTableOrViewData(connection, dbType, "MY_SCHEMA", "MYTABLE");
+        Assertions.assertEquals(0, result.size());
+    }
 }

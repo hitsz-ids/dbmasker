@@ -301,10 +301,10 @@ class DMAPITests {
 
     @Test
     void testGetPrimaryKeys() throws SQLException, ClassNotFoundException {
-        List<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Set<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
         Assertions.assertEquals(1, tablePrimaryKeys.size());
 
-        List<String> expectPrimaryKeys = new ArrayList<>();
+        Set<String> expectPrimaryKeys = new HashSet<>();
         expectPrimaryKeys.add("ID");
 
         Assertions.assertEquals(expectPrimaryKeys, tablePrimaryKeys);

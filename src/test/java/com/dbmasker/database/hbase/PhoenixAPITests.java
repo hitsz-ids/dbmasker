@@ -319,6 +319,32 @@ class PhoenixAPITests {
     }
 
     @Test
+    void testGetPrimaryKeys() throws SQLException, ClassNotFoundException {
+        createSchema(connection, dbType);
+
+        Set<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "MY_SCHEMA", "EMPLOYEES");
+        Assertions.assertEquals(1, tablePrimaryKeys.size());
+
+        Set<String> expectPrimaryKeys = new HashSet<>();
+        expectPrimaryKeys.add("ID");
+
+        Assertions.assertEquals(expectPrimaryKeys, tablePrimaryKeys);
+
+        // more test cases
+        Assertions.assertEquals(0, DBManager.getPrimaryKeys(connection, dbType, null, "employees").size());
+        Assertions.assertEquals(0, DBManager.getPrimaryKeys(connection, dbType, "fakeSchema", "employees").size());
+
+        try {
+            DBManager.getPrimaryKeys(connection, dbType, null, null);
+            Assertions.fail();
+        } catch (IllegalArgumentException e) {
+            Assertions.assertTrue(e.getMessage().startsWith(ErrorMessages.NULL_TABLE_OR_VIEW_NAME_ERROR));
+        }
+
+        Assertions.assertEquals(0, DBManager.getPrimaryKeys(connection, dbType, "my_schema", "fakeTable").size());
+    }
+
+    @Test
     void testGetIndex() {
         // not support
     }

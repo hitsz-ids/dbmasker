@@ -223,10 +223,10 @@ public class DBManager {
      * @param dbType the type of the database, such as "sqlite", "mysql", etc.
      * @param schemaName The specified schema name.
      * @param table The specified table name.
-     * @return Returns a list of primary key column names for the specified table.
+     * @return Returns a Set of primary key column names for the specified table.
      * @throws SQLException if a database access error occurs
      */
-    public static List<String> getPrimaryKeys(Connection connection, String dbType,
+    public static Set<String> getPrimaryKeys(Connection connection, String dbType,
                                                          String schemaName, String table) throws SQLException {
         if (connection == null || dbType == null) {
             throw new IllegalArgumentException(ErrorMessages.NULL_CONNECTION_OR_DB_TYPE_ERROR);

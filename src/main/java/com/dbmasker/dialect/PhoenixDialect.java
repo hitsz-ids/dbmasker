@@ -1,5 +1,10 @@
 package com.dbmasker.dialect;
 
+import com.dbmasker.database.Database;
+import com.dbmasker.database.DatabaseFactory;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Map;
 
 /**
@@ -84,5 +89,55 @@ public class PhoenixDialect extends BaseDialect {
             sql.append(schemaName).append(".");
         }
         return sql;
+    }
+
+    /**
+     * Generates an SQL UPDATE statement for the specified table with the provided conditions.
+     *
+     * @param connection The active database connection.
+     * @param dbType The type of the database (e.g., "MySQL", "PostgreSQL").
+     * @param schemaName The name of the schema.
+     * @param tableName The name of the table for which the SQL update statement is to be generated.
+     * @param setData The key-value pairs representing columns and their corresponding values to be updated.
+     * @param condition The conditions that determine which rows will be updated.
+     * @param filteredByUniqueKey Flag indicating whether to filter the conditions by unique keys.
+     * @return A string representing the SQL UPDATE statement.
+     * @throws SQLException If any SQL-related error occurs.
+     */
+    @Override
+    public String generateUpdateSql(Connection connection, String dbType, String schemaName, String tableName,
+                                    Map<String, Object> setData,
+                                    Map<String, Object> condition,
+                                    boolean filteredByUniqueKey) throws SQLException {
+        // Return null if either setData or condition is empty
+        if (setData == null || setData.isEmpty() || condition == null || condition.isEmpty()) {
+            return null;
+        }
+        Database database = new DatabaseFactory().getDatabase(dbType);
+        Map<String, String> columnTypes = database.getColumnTypes(connection, schemaName, tableName);
+
+        condition = getFilteredCondition(connection, database, schemaName, tableName, condition);
+
+        // Generate and return the SQL UPDATE statement using the given parameters.
+        return generateUpdateSql(schemaName, tableName, setData, condition, columnTypes);
+    }
+
+    /**
+     * Generates an SQL UPDATE statement based on provided schema, table, data sets, conditions, and column types.
+     *
+     * @param schemaName  The name of the database schema.
+     * @param tableName   The name of the table within the schema.
+     * @param setData     A map containing the columns and values that need to be updated.
+     * @param condition   A map containing the conditions for which rows should be updated.
+     * @param columnTypes A map specifying the data type of each column.
+     * @return An SQL UPDATE statement in string format.
+     */
+    @Override
+    public String generateUpdateSql(String schemaName, String tableName,
+                                    Map<String, Object> setData,
+                                    Map<String, Object> condition,
+                                    Map<String, String> columnTypes) {
+        setData.putAll(condition);
+        return generateInsertSql(schemaName, tableName, setData, columnTypes);
     }
 }

@@ -128,11 +128,11 @@ public class GBase8a extends BaseDatabase {
      * @param connection A valid database connection.
      * @param schemaName The specified schema name.
      * @param table The specified table name.
-     * @return Returns a list of primary key column names for the specified table.
+     * @return Returns a Set of primary key column names for the specified table.
      * @throws SQLException if a database access error occurs
      */
     @Override
-    public List<String> getPrimaryKeys(Connection connection, String schemaName, String table) throws SQLException {
+    public Set<String> getPrimaryKeys(Connection connection, String schemaName, String table) throws SQLException {
         return getPrimaryKeys(connection, schemaName, "", table);
     }
 

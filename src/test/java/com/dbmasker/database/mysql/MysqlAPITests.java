@@ -290,10 +290,10 @@ class MysqlAPITests {
     void testGetPrimaryKeys() throws SQLException, ClassNotFoundException {
         createTable(connection, dbType);
 
-        List<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "db_mysql_test", "employees");
+        Set<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "db_mysql_test", "employees");
         Assertions.assertEquals(1, tablePrimaryKeys.size());
 
-        List<String> expectPrimaryKeys = new ArrayList<>();
+        Set<String> expectPrimaryKeys = new HashSet<>();
         expectPrimaryKeys.add("id");
 
         Assertions.assertEquals(expectPrimaryKeys, tablePrimaryKeys);

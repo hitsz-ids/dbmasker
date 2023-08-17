@@ -319,10 +319,10 @@ class KingBaseAPITests {
     void testGetPrimaryKeys() throws SQLException, ClassNotFoundException {
         createSchema(connection, dbType);
 
-        List<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "my_schema", "employees");
+        Set<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "my_schema", "employees");
         Assertions.assertEquals(1, tablePrimaryKeys.size());
 
-        List<String> expectPrimaryKeys = new ArrayList<>();
+        Set<String> expectPrimaryKeys = new HashSet<>();
         expectPrimaryKeys.add("id");
 
         Assertions.assertEquals(expectPrimaryKeys, tablePrimaryKeys);
