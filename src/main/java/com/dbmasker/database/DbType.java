@@ -64,7 +64,11 @@ public enum DbType {
     /**
      * The Hbase Phoenix database type.
      */
-    PHOENIX("phoenix");
+    PHOENIX("phoenix"),
+    /**
+     * The OCEANBASE database type.
+     */
+    OCEANBASE("oceanbase");
 
     // The name of the database type
     private final String dbName;

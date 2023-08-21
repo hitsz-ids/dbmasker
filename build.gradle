@@ -16,7 +16,7 @@ plugins {
 apply plugin: 'org.owasp.dependencycheck'
 
 group = 'com.dbmasker'
-version = '0.0.4'
+version = '0.0.6'
 sourceCompatibility = '17'
 
 repositories {
@@ -48,6 +48,7 @@ dependencies {
 	testImplementation 'com.oracle.database.xml:xmlparserv2:23.2.0.0'
 	testImplementation 'com.oracle.database.jdbc:ojdbc11:23.2.0.0'
 	testImplementation 'com.oracle.ojdbc:xdb:19.3.0.0'
+//	testImplementation 'mysql:mysql-connector-java:5.1.44'
 }
 
 configurations {
@@ -64,7 +65,7 @@ tasks.named('test') {
 
 jar {
 	archiveBaseName = 'dbmasker' // 项目的名称
-	archiveVersion = '0.0.4' // 项目的版本
+	archiveVersion = '0.0.6' // 项目的版本
 }
 
 java {
@@ -88,7 +89,7 @@ publishing {
 
 			groupId 'io.github.clarkdian' // 项目的 Group ID
 			artifactId 'dbmasker' // 项目的 Artifact ID
-			version '0.0.4' // 项目的版本
+			version '0.0.6' // 项目的版本
 
 			pom {
 				name = 'dbmasker'

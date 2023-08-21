@@ -319,6 +319,15 @@ public class DbUtils {
         return bytesToHex(bytes);
     }
 
+    /**
+     * Formats the provided date object into a String representation.
+     * This method accepts objects of types Timestamp, Time, and Date. It returns
+     * the formatted string representation of the date based on its type. If the object
+     * is not of the mentioned types, it returns the string representation of the object.
+     *
+     * @param data The date object to be formatted. It can be of type Timestamp, Time, Date, or any other object.
+     * @return A formatted string representation of the provided date object. If the object is not of the expected date types, returns the string representation of the object itself.
+     */
     public static String handDateData(Object data) {
         SimpleDateFormat timeFormatter = new SimpleDateFormat("HH:mm:ss");
         SimpleDateFormat timestampFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

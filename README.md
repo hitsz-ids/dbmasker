@@ -19,6 +19,7 @@ DBMasker 为数据库管理员、开发人员、数据安全专家、数据科�
 | hbase (Phoenix) | v1-v4 | &#x2713; | 
 | mysql           | v8    | &#x2713; |
 | mariodb         | v10   | &#x2713; |
+| oceanbase       | v2    | &#x2713; |
 | mssql           | v13   | &#x2713; |
 | oracle          | v11   | &#x2713; |
 | postgreSQL      | v9    | &#x2713; |

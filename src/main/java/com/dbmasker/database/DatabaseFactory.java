@@ -53,6 +53,7 @@ public class DatabaseFactory {
             case HIVE -> new Hive();
             case ELASTICSEARCH -> new ElasticSearch();
             case PHOENIX -> new Phoenix();
+            case OCEANBASE -> new OceanBase();
             default -> throw new UnsupportedOperationException(ErrorMessages.UNSUPPORTED_DATABASE_TYPE_ERROR + dbType);
         };
     }

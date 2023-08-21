@@ -31,7 +31,7 @@ public interface Dialect {
      * @param data        A map containing the data to be inserted. Each entry in the map represents a column and its corresponding value.
      * @param dbType      The type of the database (e.g., "sqlite", "mysql", etc.).
      * @return A string representing the SQL INSERT statement.
-     * @throws IllegalArgumentException If the provided data is empty.
+     * @throws SQLException If any SQL-related error occurs.
      */
     String generateInsertSql(Connection connection, String schemaName, String tableName, Map<String, Object> data, String dbType) throws SQLException;
 

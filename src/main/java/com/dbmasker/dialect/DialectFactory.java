@@ -53,6 +53,7 @@ public class DialectFactory {
             case GBASE8T -> new Gbase8tDialect();
             case HIVE -> new HiveDialect();
             case PHOENIX -> new PhoenixDialect();
+            case OCEANBASE -> new OceanBaseDialect();
             default -> throw new UnsupportedOperationException(ErrorMessages.UNSUPPORTED_DATABASE_TYPE_ERROR + dbType);
         };
     }

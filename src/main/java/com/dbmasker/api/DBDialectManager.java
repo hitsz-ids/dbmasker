@@ -30,7 +30,7 @@ public class DBDialectManager {
      * @param tableName   The name of the table where the data should be inserted.
      * @param data        A map containing the data to be inserted. Each entry in the map represents a column and its corresponding value.
      * @return A string representing the SQL INSERT statement.
-     * @throws IllegalArgumentException If the provided data is empty.
+     * @throws SQLException If any SQL-related error occurs.
      */
     public static String generateInsertSql(Connection connection, String dbType, String schemaName,
                                             String tableName, Map<String, Object> data) throws SQLException {
