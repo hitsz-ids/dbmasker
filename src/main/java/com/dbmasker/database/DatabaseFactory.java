@@ -54,6 +54,7 @@ public class DatabaseFactory {
             case ELASTICSEARCH -> new ElasticSearch();
             case PHOENIX -> new Phoenix();
             case OCEANBASE -> new OceanBase();
+            case OSCAR -> new Oscar();
             default -> throw new UnsupportedOperationException(ErrorMessages.UNSUPPORTED_DATABASE_TYPE_ERROR + dbType);
         };
     }

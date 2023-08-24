@@ -34,12 +34,13 @@ public class OracleDialect extends BaseDialect {
         String typeUpper = type.toUpperCase();
 
         if (typeUpper.startsWith("NUMBER") || typeUpper.equals("FLOAT") || typeUpper.equals("INTEGER")
-                || typeUpper.equals("SMALLINT") || typeUpper.equals("REAL")
+                || typeUpper.equals("SMALLINT") || typeUpper.equals("REAL") || typeUpper.equals("INT")
                 || typeUpper.equals("DOUBLE PRECISION") || typeUpper.equals("DECIMAL")) {
             return data.toString();
         }
 
-        if (typeUpper.equals("CHAR") || typeUpper.startsWith("VARCHAR2") || typeUpper.equals("LONG")) {
+        if (typeUpper.equals("CHAR") || typeUpper.startsWith("VARCHAR2") || typeUpper.equals("LONG")
+                || typeUpper.startsWith("VARCHAR")) {
             String text = data.toString();
             text = text.replace("'", "''");  // Replace single quotes with two single quotes.
             return "'" + text + "'";
@@ -57,7 +58,8 @@ public class OracleDialect extends BaseDialect {
             return "XMLTYPE('" + text + "')";
         }
 
-        if (typeUpper.startsWith("RAW") || typeUpper.equals("LONG RAW") || typeUpper.equals("BLOB")) {
+        if (typeUpper.startsWith("RAW") || typeUpper.equals("LONG RAW") || typeUpper.equals("BLOB")
+                || typeUpper.equals("VARBINARY")) {
             // For binary types, assume data is either a byte array or a string and convert it to a hex string
             return "HEXTORAW('" + DbUtils.handBinaryData(data) + "')";
         }

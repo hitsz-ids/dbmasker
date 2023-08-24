@@ -68,8 +68,11 @@ public enum DbType {
     /**
      * The OCEANBASE database type.
      */
-    OCEANBASE("oceanbase");
-
+    OCEANBASE("oceanbase"),
+    /**
+     * The OSCAR database type.
+     */
+    OSCAR("oscar");
     // The name of the database type
     private final String dbName;
 

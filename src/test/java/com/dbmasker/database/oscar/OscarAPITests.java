@@ -1,47 +1,61 @@
-package com.dbmasker.database.sqlite;
+package com.dbmasker.database.oscar;
 
 import com.dbmasker.api.DBManager;
+import com.dbmasker.data.DatabaseFunction;
 import com.dbmasker.data.TableAttribute;
 import com.dbmasker.data.TableIndex;
 import com.dbmasker.data.TableMetaData;
 import com.dbmasker.database.DbType;
 import com.dbmasker.utils.DbUtils;
 import com.dbmasker.utils.ErrorMessages;
+import oracle.sql.INTERVALDS;
+import oracle.sql.TIMESTAMP;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.io.InputStream;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.*;
 import java.util.*;
 
-class SQLiteAPITests {
+class OscarAPITests {
+    private String driver = "com.oscar.Driver";
+    private String url;
+    private String username;
+    private String password;
+    private String dbType = DbType.OSCAR.getDbName();
+    private String version = "v7";
 
-    private String driver = "org.sqlite.JDBC";
-    private String url = "jdbc:sqlite:/tmp/db_sqlite_test.db";
-    private String username = "";
-    private String password = "";
-    private String dbType = DbType.SQLITE.getDbName();
-    private String version = "v3";
-
-    @AfterEach
-    public void tearDown() {
-        File file = new File("/tmp/db_sqlite_test.db");
-        if (file.exists()) {
-            file.delete();
-        }
-    }
+    private Connection connection;
 
     public void createTable(Connection connection, String dbType) throws SQLException {
         String sql = """
                 CREATE TABLE employees (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    first_name TEXT NOT NULL,
-                    last_name TEXT NOT NULL,
-                    email TEXT NOT NULL UNIQUE,
-                    age INTEGER
-                );
+                   id INT NOT NULL,
+                   first_name VARCHAR2(255) NOT NULL,
+                   last_name VARCHAR2(255) NOT NULL,
+                   email VARCHAR2(255) NOT NULL UNIQUE,
+                   age INT
+                )
+                """;
+        DBManager.executeUpdateSQL(connection, dbType, sql);
+    }
+
+    public void createTable1 (Connection connection, String dbType) throws SQLException {
+        String sql = """
+                CREATE TABLE employees (
+                   id INT NOT NULL,
+                   first_name VARCHAR2(255) NOT NULL,
+                   last_name VARCHAR2(255) NOT NULL,
+                   email VARCHAR2(255) NOT NULL ,
+                   age INT,
+                   PRIMARY KEY (id)
+                )
                 """;
         DBManager.executeUpdateSQL(connection, dbType, sql);
     }
@@ -50,42 +64,104 @@ class SQLiteAPITests {
         String sql = """
                 CREATE VIEW employee_view AS
                 SELECT first_name, last_name, email
-                FROM employees;
+                FROM employees
                 """;
         DBManager.executeUpdateSQL(connection, dbType, sql);
     }
 
     public void insertData(Connection connection, String dbType) throws SQLException {
         String sql = """
-                INSERT INTO employees (first_name, last_name, email, age)
-                VALUES ('John', 'Doe', 'john.doe@example.com', 30);
+                INSERT INTO employees (id, first_name, last_name, email, age)
+                VALUES (1, 'John', 'Doe', 'john.doe@example.com', 30)
                 """;
         DBManager.executeUpdateSQL(connection, dbType, sql);
     }
 
     public void insertData1(Connection connection, String dbType) throws SQLException {
         String sql = """
-                INSERT INTO employees (first_name, last_name, email, age) 
-                VALUES ('Jane', 'Smith', 'jane.smith@example.com', 28);
+                INSERT INTO employees VALUES (2, 'Jane', 'Smith', 'jane.smith@example.com', 28)
                 """;
         DBManager.executeUpdateSQL(connection, dbType, sql);
     }
 
     public void insertData2(Connection connection, String dbType) throws SQLException {
         String sql = """
-                INSERT INTO employees (first_name, last_name, email, age) VALUES
-                   ('Alice', 'Smith', 'alice.smith@example.com', 30),
-                   ('Bob', 'Johnson', 'bob.johnson@example.com', 35),
-                   ('Charlie', 'Williams', 'charlie.williams@example.com', 28),
-                   ('David', 'Brown', 'david.brown@example.com', 42),
-                   ('Eva', 'Jones', 'eva.jones@example.com', 26),
-                   ('Frank', 'Garcia', 'frank.garcia@example.com', 33),
-                   ('Grace', 'Martinez', 'grace.martinez@example.com', 29),
-                   ('Hannah', 'Anderson', 'hannah.anderson@example.com', 31),
-                   ('Ivan', 'Thomas', 'ivan.thomas@example.com', 27),
-                   ('Jane', 'Jackson', 'jane.jackson@example.com', 36);
+                INSERT INTO employees (id, first_name, last_name, email, age) VALUES (3, 'Alice', 'Smith', 'alice.smith@example.com', 30);
+                INSERT INTO employees (id, first_name, last_name, email, age) VALUES (4, 'Bob', 'Johnson', 'bob.johnson@example.com', 35);
+                INSERT INTO employees (id, first_name, last_name, email, age) VALUES (5, 'Charlie', 'Williams', 'charlie.williams@example.com', 28);
+                INSERT INTO employees (id, first_name, last_name, email, age) VALUES (6, 'David', 'Brown', 'david.brown@example.com', 42);
+                INSERT INTO employees (id, first_name, last_name, email, age) VALUES (7, 'Eva', 'Jones', 'eva.jones@example.com', 26);
+                INSERT INTO employees (id, first_name, last_name, email, age) VALUES (8, 'Frank', 'Garcia', 'frank.garcia@example.com', 33);
+                INSERT INTO employees (id, first_name, last_name, email, age) VALUES (9, 'Grace', 'Martinez', 'grace.martinez@example.com', 29);
+                INSERT INTO employees (id, first_name, last_name, email, age) VALUES (10, 'Hannah', 'Anderson', 'hannah.anderson@example.com', 31);
+                INSERT INTO employees (id, first_name, last_name, email, age) VALUES (11, 'Ivan', 'Thomas', 'ivan.thomas@example.com', 27);
+                INSERT INTO employees (id, first_name, last_name, email, age) VALUES (12, 'Jane', 'Jackson', 'jane.jackson@example.com', 36);
                 """;
         DBManager.executeUpdateSQL(connection, dbType, sql);
+    }
+
+    public void createFunc(Connection connection, String dbType) throws SQLException {
+        String sql2 = """
+                 CREATE FUNCTION add_numbers(a INT, b INT) RETURN INT
+                 AS
+                 BEGIN
+                     RETURN a + b;
+                 END;
+                 """;
+        DBManager.executeUpdateSQL(connection, dbType, sql2);
+    }
+
+    public void dropFunc(Connection connection, String dbType) throws SQLException {
+        String sql = """
+                DROP FUNCTION add_numbers;
+                """;
+        DBManager.executeUpdateSQL(connection, dbType, sql);
+    }
+
+    public void createIndex(Connection connection, String dbType) throws SQLException {
+        String sql = """
+                CREATE INDEX employee_email_idx ON employees (email)
+                """;
+        DBManager.executeUpdateSQL(connection, dbType, sql);
+    }
+
+    public void initConfig() {
+        Properties properties = new Properties();
+        try (InputStream in = this.getClass().getClassLoader().getResourceAsStream("conf/oscar.properties")) {
+            properties.load(in);
+            this.url = properties.getProperty("url");
+            this.username = properties.getProperty("username");
+            this.password = properties.getProperty("password");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @BeforeEach
+    public void setUp() throws SQLException, ClassNotFoundException {
+        initConfig();
+
+        connection = DBManager.createConnection(driver, url, username, password);
+    }
+
+    @AfterEach
+    public void tearDown() throws SQLException {
+        String sql = """
+                DROP TABLE IF EXISTS employees;
+                """;
+        DBManager.executeUpdateSQL(connection, dbType, sql);
+
+        sql = """
+                DROP TABLE IF EXISTS MyTable;
+                """;
+        DBManager.executeUpdateSQL(connection, dbType, sql);
+
+        String sql1 = """
+                DROP VIEW IF EXISTS employee_view;
+                """;
+        DBManager.executeUpdateSQL(connection, dbType, sql1);
+
+        DBManager.closeConnection(connection);
     }
 
     @Test
@@ -118,33 +194,34 @@ class SQLiteAPITests {
 
     @Test
     void testCloseConn() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
-        Assertions.assertNotNull(connection);
+        Connection connection1 = DBManager.createConnection(driver, url, username, password);
+        Assertions.assertNotNull(connection1);
 
-        Assertions.assertTrue(DBManager.closeConnection(connection));
+        Assertions.assertTrue(DBManager.closeConnection(connection1));
 
         // more test cases
-        Assertions.assertTrue(connection.isClosed());
-        Assertions.assertTrue(DBManager.closeConnection(connection));
+        Assertions.assertTrue(connection1.isClosed());
+        Assertions.assertTrue(DBManager.closeConnection(connection1));
 
         Assertions.assertFalse(DBManager.closeConnection(null));
     }
 
     @Test
-    void testGetSchema() throws SQLException, ClassNotFoundException {
-        // not support
+    void testGetSchema() throws SQLException {
+        List<String> sqliteSchemas = DBManager.getSchema(connection, dbType);
+        Assertions.assertTrue(sqliteSchemas.size() > 0);
+        Assertions.assertTrue(sqliteSchemas.contains("SYSDBA"));
     }
 
     @Test
     void testGetTables() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
 
-        List<String> sqliteTables = DBManager.getTables(connection, dbType, "");
+        List<String> tables = DBManager.getTables(connection, dbType, "SYSDBA");
         List<String> expectTables = new ArrayList<>();
-        expectTables.add("employees");
+        expectTables.add("EMPLOYEES");
 
-        Assertions.assertEquals(expectTables, sqliteTables);
+        Assertions.assertEquals(tables.contains("EMPLOYEES"), true);
 
         // more test cases
         try {
@@ -168,68 +245,54 @@ class SQLiteAPITests {
             Assertions.assertTrue(e.getMessage().startsWith(ErrorMessages.UNSUPPORTED_DATABASE_TYPE_ERROR));
         }
 
-        Assertions.assertEquals(expectTables,DBManager.getTables(connection, dbType, null));
-        Assertions.assertEquals(expectTables,DBManager.getTables(connection, dbType, "fakeSchema"));
-
-        DBManager.closeConnection(connection);
-
-        tearDown();
-        Connection newConnection = DBManager.createConnection(driver, url, username, password);
-        Assertions.assertEquals(new ArrayList<>(), DBManager.getTables(newConnection, dbType, ""));
+        Assertions.assertTrue(DBManager.getTables(connection, dbType, null).contains("EMPLOYEES"));
+        Assertions.assertTrue(DBManager.getTables(connection, dbType, "fakeSchema").isEmpty());
     }
 
     @Test
     void testGetViews() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
         createView(connection, dbType);
 
-        List<String> sqliteViews = DBManager.getViews(connection, dbType, "");
-        List<String> expectViews = new ArrayList<>();
-        expectViews.add("employee_view");
+        List<String> views = DBManager.getViews(connection, dbType, "SYSDBA");
 
-        Assertions.assertEquals(expectViews, sqliteViews);
+        Assertions.assertTrue(views.contains("EMPLOYEE_VIEW"));
 
         // more test cases
-        Assertions.assertEquals(expectViews, DBManager.getViews(connection, dbType, null));
-        Assertions.assertEquals(expectViews, DBManager.getViews(connection, dbType, "fakeSchema"));
+        Assertions.assertTrue(DBManager.getViews(connection, dbType, null).contains("EMPLOYEE_VIEW"));
+        Assertions.assertTrue(DBManager.getViews(connection, dbType, "fakeSchema").isEmpty());
 
-        DBManager.closeConnection(connection);
-        tearDown();
-        Connection newConnection = DBManager.createConnection(driver, url, username, password);
-        Assertions.assertEquals(new ArrayList<>(), DBManager.getViews(newConnection, dbType, ""));
+        Assertions.assertEquals(new ArrayList<>(), DBManager.getViews(connection, dbType, "my_schema"));
     }
 
     @Test
     void testGetMetaData() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
 
-        List<TableMetaData> metaDatas = DBManager.getMetaData(connection, dbType, "");
-        Assertions.assertEquals(metaDatas.size(), 5);
+        List<TableMetaData> metaDatas = DBManager.getMetaData(connection, dbType, "SYSDBA");
+        Assertions.assertTrue(metaDatas.size() > 0);
+
+        // clean cursors
+        DBManager.closeConnection(connection);
+        connection = DBManager.createConnection(driver, url, username, password);
 
         // more test cases
-        Assertions.assertEquals(5, DBManager.getMetaData(connection, dbType, null).size());
-        Assertions.assertEquals(5, DBManager.getMetaData(connection, dbType, "fakeSchema").size());
+//        Assertions.assertTrue( DBManager.getMetaData(connection, dbType, null).size() > 5);
+        Assertions.assertTrue(DBManager.getMetaData(connection, dbType, "fakeSchema").isEmpty());
 
-        DBManager.closeConnection(connection);
-        tearDown();
-        Connection newConnection = DBManager.createConnection(driver, url, username, password);
-        Assertions.assertEquals(new ArrayList<>(), DBManager.getMetaData(newConnection, dbType, ""));
-        
+        Assertions.assertTrue(DBManager.getMetaData(connection, dbType, "my_schema").isEmpty());
     }
 
     @Test
     void testGetTableAttribute() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
 
-        List<TableAttribute> tableAttributes = DBManager.getTableAttribute(connection, dbType, "", "employees");
+        List<TableAttribute> tableAttributes = DBManager.getTableAttribute(connection, dbType, "SYSDBA", "EMPLOYEES");
         Assertions.assertEquals(tableAttributes.size(), 5);
 
         // more test cases
-        Assertions.assertEquals(5, DBManager.getTableAttribute(connection, dbType, null, "employees").size());
-        Assertions.assertEquals(5, DBManager.getTableAttribute(connection, dbType, "fakeSchema", "employees").size());
+        Assertions.assertEquals(5, DBManager.getTableAttribute(connection, dbType, null, "EMPLOYEES").size());
+        Assertions.assertTrue(DBManager.getTableAttribute(connection, dbType, "fakeSchema", "EMPLOYEES").isEmpty());
 
         try {
             DBManager.getTableAttribute(connection, dbType, null, null);
@@ -237,36 +300,27 @@ class SQLiteAPITests {
         } catch (IllegalArgumentException e) {
             Assertions.assertTrue(e.getMessage().startsWith(ErrorMessages.NULL_TABLE_OR_VIEW_NAME_ERROR));
         }
-        try {
-            DBManager.getTableAttribute(connection, dbType, null, "fakeTable").size();
-            Assertions.fail();
-        } catch (SQLException e) {
-            Assertions.assertTrue(e.getMessage().startsWith("Table not found:"));
-        }
-        try {
-            DBManager.getTableAttribute(connection, dbType, null, "").size();
-            Assertions.fail();
-        } catch (SQLException e) {
-            Assertions.assertTrue(e.getMessage().startsWith("Invalid table name:"));
-        }
+
+        Assertions.assertEquals(0, DBManager.getTableAttribute(connection, dbType, null, "fakeTable").size());
+
+        Assertions.assertTrue(DBManager.getTableAttribute(connection, dbType, null, "1").isEmpty());
     }
 
     @Test
     void testGetPrimaryKeys() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
-        createTable(connection, dbType);
+        createTable1(connection, dbType);
 
-        Set<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "", "employees");
+        Set<String> tablePrimaryKeys = DBManager.getPrimaryKeys(connection, dbType, "SYSDBA", "EMPLOYEES");
         Assertions.assertEquals(1, tablePrimaryKeys.size());
 
         Set<String> expectPrimaryKeys = new HashSet<>();
-        expectPrimaryKeys.add("id");
+        expectPrimaryKeys.add("ID");
 
         Assertions.assertEquals(expectPrimaryKeys, tablePrimaryKeys);
 
         // more test cases
-        Assertions.assertEquals(1, DBManager.getPrimaryKeys(connection, dbType, null, "employees").size());
-        Assertions.assertEquals(1, DBManager.getPrimaryKeys(connection, dbType, "fakeSchema", "employees").size());
+        Assertions.assertEquals(1, DBManager.getPrimaryKeys(connection, dbType, null, "EMPLOYEES").size());
+        Assertions.assertEquals(0, DBManager.getPrimaryKeys(connection, dbType, "fakeSchema", "EMPLOYEES").size());
 
         try {
             DBManager.getPrimaryKeys(connection, dbType, null, null);
@@ -275,50 +329,41 @@ class SQLiteAPITests {
             Assertions.assertTrue(e.getMessage().startsWith(ErrorMessages.NULL_TABLE_OR_VIEW_NAME_ERROR));
         }
 
-        try {
-            DBManager.getPrimaryKeys(connection, dbType, null, "fakeTable");
-            Assertions.fail();
-        } catch (SQLException e) {
-            Assertions.assertTrue(e.getMessage().startsWith(ErrorMessages.TABLE_NOT_FOUND_ERROR));
-        }
+        Assertions.assertEquals(0, DBManager.getPrimaryKeys(connection, dbType, "my_schema", "fakeTable").size());
     }
 
     @Test
     void testGetUniqueKey() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
 
-        Map<String, Set<String>> tableUniqueKey = DBManager.getUniqueKeys(connection, dbType, "", "employees");
+        Map<String, Set<String>> tableUniqueKey = DBManager.getUniqueKeys(connection, dbType, "SYSDBA", "EMPLOYEES");
         Assertions.assertEquals(tableUniqueKey.size(), 1);
 
         // more test cases
-        Assertions.assertEquals(1, DBManager.getUniqueKeys(connection, dbType, null, "employees").size());
-        Assertions.assertEquals(1, DBManager.getUniqueKeys(connection, dbType, "fakeSchema", "employees").size());
+        Assertions.assertEquals(1, DBManager.getUniqueKeys(connection, dbType, null, "EMPLOYEES").size());
+
+        Assertions.assertTrue(DBManager.getUniqueKeys(connection, dbType, "fakeSchema", "EMPLOYEES").isEmpty());
 
         try {
-            DBManager.getUniqueKeys(connection, dbType, null, null).size();
+            Assertions.assertEquals(0, DBManager.getUniqueKeys(connection, dbType, null, null).size());
             Assertions.fail();
         } catch (IllegalArgumentException e) {
             Assertions.assertTrue(e.getMessage().startsWith(ErrorMessages.NULL_TABLE_OR_VIEW_NAME_ERROR));
         }
 
-        Assertions.assertEquals(0, DBManager.getUniqueKeys(connection, dbType, null, "fakeTable").size());
+        Assertions.assertTrue(DBManager.getUniqueKeys(connection, dbType, null, "fakeTable").isEmpty());
     }
 
     @Test
     void testGetIndex() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
 
-        List<TableIndex> tableIndex = DBManager.getIndex(connection, dbType, "", "employees");
-        TableIndex tableIndex1 = new TableIndex("sqlite_auto_index_employees_1", "email", true);
-        List<TableIndex> expectIndex = new ArrayList<>();
-        expectIndex.add(tableIndex1);
-        Assertions.assertEquals(tableIndex.size(), expectIndex.size());
+        List<TableIndex> tableIndex = DBManager.getIndex(connection, dbType, "SYSDBA", "EMPLOYEES");
+        Assertions.assertEquals("EMAIL", tableIndex.get(0).getColumnName());
 
         // more test cases
-        Assertions.assertEquals(expectIndex.size(), DBManager.getIndex(connection, dbType, null, "employees").size());
-        Assertions.assertEquals(expectIndex.size(), DBManager.getIndex(connection, dbType, "fakeSchema", "employees").size());
+        Assertions.assertEquals("EMAIL", DBManager.getIndex(connection, dbType, null, "EMPLOYEES").get(0).getColumnName());
+        Assertions.assertTrue(DBManager.getIndex(connection, dbType, "fakeSchema", "employees").isEmpty());
 
         try {
             Assertions.assertEquals(0, DBManager.getIndex(connection, dbType, null, null).size());
@@ -331,20 +376,13 @@ class SQLiteAPITests {
     }
 
     @Test
-    void testExecuteUpdateSQL() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
-        String sql =  """
-                CREATE TABLE employees (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    first_name TEXT NOT NULL,
-                    last_name TEXT NOT NULL,
-                    email TEXT NOT NULL UNIQUE,
-                    age INTEGER
-                );
-                INSERT INTO employees (first_name, last_name, email, age)
-                VALUES ('John', 'Doe', 'john.doe@example.com', 30);
+    void testExecuteUpdateSQL() throws SQLException {
+        createTable(connection, dbType);
+        String insert = """
+                INSERT INTO employees (id, first_name, last_name, email, age)
+                VALUES (1, 'John', 'Doe', 'john.doe@example.com', 30)
                 """;
-        int rowCount = DBManager.executeUpdateSQL(connection, dbType, sql);
+        int rowCount = DBManager.executeUpdateSQL(connection, dbType, insert);
         Assertions.assertEquals(rowCount, 1);
 
         // more test cases
@@ -360,30 +398,35 @@ class SQLiteAPITests {
         } catch (SQLException e) {
             //pass
         }
-        Assertions.assertEquals(0, DBManager.executeUpdateSQL(connection, dbType, "SELECT id, first_name, last_name, email, age FROM employees;"));
+
+        try {
+            DBManager.executeUpdateSQL(connection, dbType, "SELECT id, first_name, last_name, email, age FROM my_schema.employees;");
+            Assertions.fail();
+        } catch (SQLException e) {
+            //pass
+        }
     }
 
     @Test
     void testExecuteUpdateSQLBatch() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         List<String> sqlList = new ArrayList<>();
         String createTable = """
                 CREATE TABLE employees (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    first_name TEXT NOT NULL,
-                    last_name TEXT NOT NULL,
-                    email TEXT NOT NULL UNIQUE,
-                    age INTEGER
-                );
+                   id NUMBER(10) NOT NULL,
+                   first_name VARCHAR2(255) NOT NULL,
+                   last_name VARCHAR2(255) NOT NULL,
+                   email VARCHAR2(255) NOT NULL UNIQUE,
+                   age NUMBER(3)
+                )
                 """;
         String createView = """
                 CREATE VIEW employee_view AS
                 SELECT first_name, last_name, email
-                FROM employees;
+                FROM employees
                 """;
         String insert = """
-                INSERT INTO employees (first_name, last_name, email, age)
-                VALUES ('John', 'Doe', 'john.doe@example.com', 30);
+                INSERT INTO employees (id, first_name, last_name, email, age)
+                VALUES (1, 'John', 'Doe', 'john.doe@example.com', 30)
                 """;
         sqlList.add(createTable);
         sqlList.add(createView);
@@ -403,8 +446,7 @@ class SQLiteAPITests {
         Assertions.assertEquals(0, DBManager.executeUpdateSQLBatch(connection, dbType, new ArrayList<>()));
 
         String insert2 = """
-                INSERT INTO employees (first_name, last_name, email, age) 
-                VALUES ('Jane', 'Smith', 'jane.smith@example.com', 28);
+                INSERT INTO employees VALUES (2, 'Jane', 'Smith', 'jane.smith@example.com', 28)
                 """;
         String fakeSQL = "fakeSQL";
         ArrayList<String> sqlList2 = new ArrayList<>();
@@ -414,30 +456,35 @@ class SQLiteAPITests {
             DBManager.executeUpdateSQLBatch(connection, dbType, sqlList2);
             Assertions.fail();
         } catch (SQLException e) {
-            Assertions.assertEquals(1, DBManager.getTableOrViewData(connection, dbType, "", "employees").size());
+            Assertions.assertEquals(1, DBManager.getTableOrViewData(connection, dbType, "SYSDBA", "EMPLOYEES").size());
         }
     }
 
     @Test
     void testExecuteQuerySQL() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
         insertData(connection, dbType);
 
         String sql = """
-                SELECT id, first_name, last_name, email, age FROM employees;
+                SELECT id, first_name, last_name, email, age FROM employees
                 """;
         List<Map<String, Object>> result = DBManager.executeQuerySQL(connection, dbType, sql);
         Assertions.assertEquals(result.size(), 1);
 
         Map<String, Object> expectMap = new HashMap<>();
         List<Map<String, Object>> expectResult = new ArrayList<>();
-        expectMap.put("last_name", "Doe");
-        expectMap.put("id", 1);
-        expectMap.put("first_name", "John");
-        expectMap.put("email", "john.doe@example.com");
-        expectMap.put("age", 30);
+        expectMap.put("LAST_NAME", "Doe");
+        expectMap.put("ID", 1);
+        expectMap.put("FIRST_NAME", "John");
+        expectMap.put("EMAIL", "john.doe@example.com");
+        expectMap.put("AGE", 30);
         expectResult.add(expectMap);
+
+        Assertions.assertEquals(result.get(0).get("ID"), expectResult.get(0).get("ID"));
+        Assertions.assertEquals(result.get(0).get("FIRST_NAME"), expectResult.get(0).get("FIRST_NAME"));
+        Assertions.assertEquals(result.get(0).get("LAST_NAME"), expectResult.get(0).get("LAST_NAME"));
+        Assertions.assertEquals(result.get(0).get("EMAIL"), expectResult.get(0).get("EMAIL"));
+        Assertions.assertEquals(result.get(0).get("AGE"), expectResult.get(0).get("AGE"));
 
         Assertions.assertEquals(result, expectResult);
 
@@ -457,8 +504,7 @@ class SQLiteAPITests {
         }
 
         String insert = """
-                INSERT INTO employees (first_name, last_name, email, age)
-                VALUES ('Jane', 'Smith', 'jane.smith@example.com', 28);
+                INSERT INTO employees VALUES (2, 'Jane', 'Smith', 'jane.smith@example.com', 28)
                 """;
         try {
             DBManager.executeQuerySQL(connection, dbType, insert);
@@ -470,14 +516,13 @@ class SQLiteAPITests {
 
     @Test
     void testExecuteQuerySQLBatch() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
         insertData(connection, dbType);
         String sql = """
-                SELECT id, first_name, last_name, email, age FROM employees;
+                SELECT id, first_name, last_name, email, age FROM employees
                 """;
         String sql2 = """
-                SELECT first_name, last_name, email FROM employees;
+                SELECT first_name, last_name, email FROM employees
                 """;
         List<String> sqlList = new ArrayList<>();
         sqlList.add(sql);
@@ -488,18 +533,18 @@ class SQLiteAPITests {
 
         Map<String, Object> expectMap1 = new HashMap<>();
         List<Map<String, Object>> expectResult1 = new ArrayList<>();
-        expectMap1.put("last_name", "Doe");
-        expectMap1.put("id", 1);
-        expectMap1.put("first_name", "John");
-        expectMap1.put("email", "john.doe@example.com");
-        expectMap1.put("age", 30);
+        expectMap1.put("LAST_NAME", "Doe");
+        expectMap1.put("ID", 1);
+        expectMap1.put("FIRST_NAME", "John");
+        expectMap1.put("EMAIL", "john.doe@example.com");
+        expectMap1.put("AGE", 30);
         expectResult1.add(expectMap1);
 
         Map<String, Object> expectMap2 = new HashMap<>();
         List<Map<String, Object>> expectResult2 = new ArrayList<>();
-        expectMap2.put("last_name", "Doe");
-        expectMap2.put("first_name", "John");
-        expectMap2.put("email", "john.doe@example.com");
+        expectMap2.put("LAST_NAME", "Doe");
+        expectMap2.put("FIRST_NAME", "John");
+        expectMap2.put("EMAIL", "john.doe@example.com");
         expectResult2.add(expectMap2);
 
         List<List<Map<String, Object>>> expectResults = new ArrayList<>();
@@ -530,7 +575,7 @@ class SQLiteAPITests {
 
         sqlList.remove(2);
         String updateSql = """
-                UPDATE employees SET age = 31 WHERE id = 1;
+                UPDATE my_schema.employees SET age = 31 WHERE id = 1;
                 """;
         sqlList.add(updateSql);
         try {
@@ -542,30 +587,29 @@ class SQLiteAPITests {
     }
 
     @Test
-    void testExecuteSQL() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
+    void testExecuteSQL() throws SQLException {
         createTable(connection, dbType);
         insertData(connection, dbType);
 
         String sql = """
-                SELECT id, first_name, last_name, email, age FROM employees;
+                SELECT id, first_name, last_name, email, age FROM employees
                 """;
         List<Map<String, Object>> result = DBManager.executeSQL(connection, dbType, sql);
         Assertions.assertEquals(result.size(), 1);
 
         Map<String, Object> expectMap = new HashMap<>();
         List<Map<String, Object>> expectResult = new ArrayList<>();
-        expectMap.put("last_name", "Doe");
-        expectMap.put("id", 1);
-        expectMap.put("first_name", "John");
-        expectMap.put("email", "john.doe@example.com");
-        expectMap.put("age", 30);
+        expectMap.put("LAST_NAME", "Doe");
+        expectMap.put("ID", 1);
+        expectMap.put("FIRST_NAME", "John");
+        expectMap.put("EMAIL", "john.doe@example.com");
+        expectMap.put("AGE", 30);
         expectResult.add(expectMap);
 
         Assertions.assertEquals(result, expectResult);
 
         String updateSql = """
-                UPDATE employees SET age = 31 WHERE id = 1;
+                UPDATE employees SET age = 31 WHERE id = 1
                 """;
         result = DBManager.executeSQL(connection, dbType, updateSql);
         Assertions.assertEquals(result.size(), 1);
@@ -580,22 +624,27 @@ class SQLiteAPITests {
 
         // more test cases
         sql = """
-                SELECT id, first_name, last_name, email, age FROM employees;
-                UPDATE employees SET age = 32 WHERE id = 1;
+                SELECT id, first_name, last_name, email, age FROM employees
+                UPDATE employees SET age = 32 WHERE id = 1
                 """;
 
-        result = DBManager.executeSQL(connection, dbType, sql);
-        Assertions.assertEquals(result.size(), 1);
-        expectMap.put("age", 31);
-        Assertions.assertEquals(result, expectResult);
+        try {
+            DBManager.executeSQL(connection, dbType, sql);
+            Assertions.fail();
+        } catch (SQLException e) {
+            //pass
+        }
 
         sql = """
-                UPDATE employees SET age = 32 WHERE id = 1;
-                SELECT id, first_name, last_name, email, age FROM employees;
+                UPDATE employees SET age = 32 WHERE id = 1
+                SELECT id, first_name, last_name, email, age FROM employees
                 """;
-        result = DBManager.executeSQL(connection, dbType, sql);
-        Assertions.assertEquals(result.size(), 1);
-        Assertions.assertEquals(result, expectResult1);
+        try {
+            DBManager.executeSQL(connection, dbType, sql);
+            Assertions.fail();
+        } catch (SQLException e) {
+            //pass
+        }
 
         try {
             DBManager.executeSQL(connection, dbType, "fakeSQL");
@@ -606,16 +655,15 @@ class SQLiteAPITests {
     }
 
     @Test
-    void testExecuteSQLBatch() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
+    void testExecuteSQLBatch() throws SQLException {
         createTable(connection, dbType);
         insertData(connection, dbType);
 
         String sql1 = """
-                SELECT id, first_name, last_name, email, age FROM employees;
+                SELECT id, first_name, last_name, email, age FROM employees
                 """;
         String sql2 = """
-                UPDATE employees SET age = 31 WHERE id = 1;
+                UPDATE employees SET age = 31 WHERE id = 1
                 """;
         List<String> sqlList = new ArrayList<>();
         sqlList.add(sql1);
@@ -626,11 +674,11 @@ class SQLiteAPITests {
 
         Map<String, Object> expectMap = new HashMap<>();
         List<Map<String, Object>> expectResult = new ArrayList<>();
-        expectMap.put("last_name", "Doe");
-        expectMap.put("id", 1);
-        expectMap.put("first_name", "John");
-        expectMap.put("email", "john.doe@example.com");
-        expectMap.put("age", 30);
+        expectMap.put("LAST_NAME", "Doe");
+        expectMap.put("ID", 1);
+        expectMap.put("FIRST_NAME", "John");
+        expectMap.put("EMAIL", "john.doe@example.com");
+        expectMap.put("AGE", 30);
         expectResult.add(expectMap);
 
         Map<String, Object> expectMap1 = new HashMap<>();
@@ -645,7 +693,7 @@ class SQLiteAPITests {
         Assertions.assertEquals(result, expectResultList);
 
         sql2 = """
-                UPDATE employees SET age = 32 WHERE id = 1;
+                UPDATE employees SET age = 32 WHERE id = 1
                 """;
         sqlList = new ArrayList<>();
         sqlList.add(sql2);
@@ -654,15 +702,14 @@ class SQLiteAPITests {
         result = DBManager.executeSQLBatch(connection, dbType, sqlList);
         expectResultList = new ArrayList<>();
         expectResultList.add(expectResult1);
-        expectMap.put("age", 32);
+        expectMap.put("AGE",32);
         expectResultList.add(expectResult);
 
         Assertions.assertEquals(result, expectResultList);
     }
 
     @Test
-    void testExecuteSQLScript() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
+    void testExecuteSQLScript() throws SQLException {
         createTable(connection, dbType);
         insertData(connection, dbType);
 
@@ -677,11 +724,11 @@ class SQLiteAPITests {
 
         Map<String, Object> expectMap = new HashMap<>();
         List<Map<String, Object>> expectResult = new ArrayList<>();
-        expectMap.put("last_name", "Doe");
-        expectMap.put("id", 1);
-        expectMap.put("first_name", "John");
-        expectMap.put("email", "john.doe@example.com");
-        expectMap.put("age", 30);
+        expectMap.put("LAST_NAME", "Doe");
+        expectMap.put("ID", 1);
+        expectMap.put("FIRST_NAME", "John");
+        expectMap.put("EMAIL", "john.doe@example.com");
+        expectMap.put("AGE", 30);
         expectResult.add(expectMap);
 
         Map<String, Object> expectMap1 = new HashMap<>();
@@ -691,7 +738,7 @@ class SQLiteAPITests {
 
         Assertions.assertEquals(result.get(0), expectResult);
         Assertions.assertEquals(result.get(1), expectResult1);
-        expectMap.put("age", 31);
+        expectMap.put("AGE", 31);
         Assertions.assertEquals(result.get(2), expectResult);
 
         sqlScript = """
@@ -705,7 +752,7 @@ class SQLiteAPITests {
 
         Assertions.assertEquals(result.get(1), expectResult1);
         Assertions.assertEquals(result.get(0), expectResult1);
-        expectMap.put("age", 32);
+        expectMap.put("AGE", 32);
         Assertions.assertEquals(result.get(2), expectResult);
 
         // more test cases
@@ -735,10 +782,8 @@ class SQLiteAPITests {
         Assertions.assertTrue(result.isEmpty());
     }
 
-
     @Test
     void testCommit() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
         boolean setAutoCommit = DBManager.setAutoCommit(connection, dbType, false);
         Assertions.assertTrue(setAutoCommit);
@@ -753,13 +798,12 @@ class SQLiteAPITests {
 
     @Test
     void testRollBack() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
         DBManager.setAutoCommit(connection, dbType, false);
         insertData(connection, dbType);
 
         String sql = """
-                SELECT id, first_name, last_name, email, age FROM employees;
+                SELECT id, first_name, last_name, email, age FROM employees
                 """;
         Assertions.assertEquals(DBManager.executeQuerySQL(connection, dbType, sql).size(), 1);
 
@@ -771,7 +815,6 @@ class SQLiteAPITests {
         DBManager.setAutoCommit(connection, dbType, true);
 
         // more test cases
-        DBManager.closeConnection(connection);
         tearDown();
         connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
@@ -781,41 +824,39 @@ class SQLiteAPITests {
         Assertions.assertFalse(isRollBack);
 
         Assertions.assertEquals(DBManager.executeQuerySQL(connection, dbType, sql).size(), 1);
-
     }
 
     @Test
     void testGetTableData() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
         insertData(connection, dbType);
 
-        List<Map<String, Object>> result = DBManager.getTableOrViewData(connection, dbType, "", "employees");
+        List<Map<String, Object>> result = DBManager.getTableOrViewData(connection, dbType, "SYSDBA", "EMPLOYEES");
         Map<String, Object> expectMap = new HashMap<>();
         List<Map<String, Object>> expectResult = new ArrayList<>();
-        expectMap.put("last_name", "Doe");
-        expectMap.put("id", 1);
-        expectMap.put("first_name", "John");
-        expectMap.put("email", "john.doe@example.com");
-        expectMap.put("age", 30);
+        expectMap.put("LAST_NAME", "Doe");
+        expectMap.put("ID", 1);
+        expectMap.put("FIRST_NAME", "John");
+        expectMap.put("EMAIL", "john.doe@example.com");
+        expectMap.put("AGE", 30);
         expectResult.add(expectMap);
         Assertions.assertEquals(result, expectResult);
 
         createView(connection, dbType);
-        List<Map<String, Object>> result2= DBManager.getTableOrViewData(connection, dbType, "", "employee_view");
+        List<Map<String, Object>> result2= DBManager.getTableOrViewData(connection, dbType, "SYSDBA", "EMPLOYEE_VIEW");
         Map<String, Object> expectMap2 = new HashMap<>();
         List<Map<String, Object>> expectResult2 = new ArrayList<>();
-        expectMap2.put("last_name", "Doe");
-        expectMap2.put("first_name", "John");
-        expectMap2.put("email", "john.doe@example.com");
+        expectMap2.put("LAST_NAME", "Doe");
+        expectMap2.put("FIRST_NAME", "John");
+        expectMap2.put("EMAIL", "john.doe@example.com");
         expectResult2.add(expectMap2);
         Assertions.assertEquals(result2, expectResult2);
 
         // more test cases
-        Assertions.assertEquals(expectResult, DBManager.getTableOrViewData(connection, dbType, null, "employees"));
+        Assertions.assertEquals(DBManager.getTableOrViewData(connection, dbType, null, "EMPLOYEE_VIEW"), expectResult2);
 
         try {
-            DBManager.getTableOrViewData(connection, dbType, "fakeSchema", "employee_view");
+            Assertions.assertEquals(expectResult2, DBManager.getTableOrViewData(connection, dbType, "fakeSchema", "EMPLOYEE_VIEW"));
             Assertions.fail();
         } catch (SQLException e) {
         }
@@ -837,72 +878,70 @@ class SQLiteAPITests {
 
     @Test
     void testGetDataWithPage() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         createTable(connection, dbType);
         insertData(connection, dbType);
         insertData1(connection, dbType);
         insertData2(connection, dbType);
 
-
         List<String> columnNames = new ArrayList<>();
-        columnNames.add("first_name");
-        columnNames.add("last_name");
-        columnNames.add("email");
-        Map<String, Object> result = DBManager.getDataWithPage(connection, dbType, "", "employees", columnNames, 1, 5);
+        columnNames.add("FIRST_NAME");
+        columnNames.add("LAST_NAME");
+        columnNames.add("EMAIL");
+        Map<String, Object> result = DBManager.getDataWithPage(connection, dbType, "SYSDBA", "employees", columnNames, 1, 5);
         Assertions.assertEquals(result.get("totalPages"), 3);
 
         List<Map<String, Object>> resultList = DbUtils.getResultList(result);
         Assertions.assertEquals(resultList.size(), 5);
 
         Map<String, Object> expectMap = new HashMap<>();
-        expectMap.put("last_name", "Doe");
-        expectMap.put("first_name", "John");
-        expectMap.put("email", "john.doe@example.com");
+        expectMap.put("LAST_NAME", "Doe");
+        expectMap.put("FIRST_NAME", "John");
+        expectMap.put("EMAIL", "john.doe@example.com");
         Assertions.assertEquals(resultList.get(0), expectMap);
 
-        result = DBManager.getDataWithPage(connection, dbType, "", "employees", new ArrayList<>(), 5, 1);
+        result = DBManager.getDataWithPage(connection, dbType, "SYSDBA", "employees", new ArrayList<>(), 5, 1);
         Assertions.assertEquals(result.get("totalPages"), 12);
 
         resultList = DbUtils.getResultList(result);
         Map<String, Object> expectMap1 = new HashMap<>();
-        expectMap1.put("id", 5);
-        expectMap1.put("first_name", "Charlie");
-        expectMap1.put("last_name", "Williams");
-        expectMap1.put("email", "charlie.williams@example.com");
-        expectMap1.put("age", 28);
+        expectMap1.put("ID", 5);
+        expectMap1.put("FIRST_NAME", "Charlie");
+        expectMap1.put("LAST_NAME", "Williams");
+        expectMap1.put("EMAIL", "charlie.williams@example.com");
+        expectMap1.put("AGE", 28);
         Assertions.assertEquals(resultList.get(0), expectMap1);
 
-        result = DBManager.getDataWithPage(connection, dbType, "", "employees", new ArrayList<>(), 1, 12);
+        result = DBManager.getDataWithPage(connection, dbType, "SYSDBA", "employees", new ArrayList<>(), 1, 12);
         Assertions.assertEquals(result.get("totalPages"), 1);
 
         resultList = DbUtils.getResultList(result);
         Map<String, Object> expectMap2 = new HashMap<>();
-        expectMap2.put("id", 12);
-        expectMap2.put("first_name", "Jane");
-        expectMap2.put("last_name", "Jackson");
-        expectMap2.put("email", "jane.jackson@example.com");
-        expectMap2.put("age", 36);
+        expectMap2.put("ID", 12);
+        expectMap2.put("FIRST_NAME", "Jane");
+        expectMap2.put("LAST_NAME", "Jackson");
+        expectMap2.put("EMAIL", "jane.jackson@example.com");
+        expectMap2.put("AGE", 36);
         Assertions.assertEquals(resultList.get(11), expectMap2);
 
         columnNames = new ArrayList<>();
         columnNames.add("id");
         columnNames.add("first_name");
         columnNames.add("last_name");
-        columnNames.add("email");
+        columnNames.add("EMAIL");
         columnNames.add("age");
-        result = DBManager.getDataWithPage(connection, dbType, "", "employees", columnNames, 1, 100);
+        result = DBManager.getDataWithPage(connection, dbType, "SYSDBA", "employees", columnNames, 1, 100);
         Assertions.assertEquals(result.get("totalPages"), 1);
 
         resultList = DbUtils.getResultList(result);
         Assertions.assertEquals(resultList.get(11), expectMap2);
 
-        result = DBManager.getDataWithPage(connection, dbType, "", "employees", null, -1, 5);
+        result = DBManager.getDataWithPage(connection, dbType, "SYSDBA", "employees", null, -1, 5);
         Assertions.assertEquals(result.get("totalPages"), 1);
 
         resultList = DbUtils.getResultList(result);
         Assertions.assertEquals(resultList.size(), 12);
 
-        result = DBManager.getDataWithPage(connection, dbType, "", "employees", null, 1, 0);
+        result = DBManager.getDataWithPage(connection, dbType, "SYSDBA", "employees", null, 1, 0);
         Assertions.assertEquals(result.get("totalPages"), 1);
 
         resultList = DbUtils.getResultList(result);
@@ -913,7 +952,7 @@ class SQLiteAPITests {
         columnNames.add("first_name");
         columnNames.add("fake_column");
         try {
-            DBManager.getDataWithPage(connection, dbType, "", "employees", columnNames, 1, 5);
+            DBManager.getDataWithPage(connection, dbType, "SYSDBA", "employees", columnNames, 1, 5);
             Assertions.fail();
         } catch (SQLException e) {
             //pass
@@ -926,7 +965,7 @@ class SQLiteAPITests {
             //pass
         }
 
-        result = DBManager.getDataWithPage(connection, dbType, "", "employees", null, 3, 10);
+        result = DBManager.getDataWithPage(connection, dbType, "SYSDBA", "employees", null, 3, 10);
         Assertions.assertEquals(result.get("totalPages"), 2);
 
         resultList = DbUtils.getResultList(result);
@@ -934,46 +973,117 @@ class SQLiteAPITests {
     }
 
     @Test
+    void testGetFunc() throws SQLException {
+        createTable(connection, dbType);
+        createFunc(connection, dbType);
+
+        List<DatabaseFunction> result = DBManager.getFuncs(connection, dbType, "SYSDBA");
+        Assertions.assertEquals(result.size() > 1, true);
+
+        DatabaseFunction function = new DatabaseFunction("SYSDBA", "ADD_NUMBERS");
+        Assertions.assertEquals(true, result.contains(function));
+
+        // more test cases
+        Assertions.assertTrue(DBManager.getFuncs(connection, dbType, null).size() > 1);
+        Assertions.assertTrue(DBManager.getFuncs(connection, dbType, "fakeSchema").isEmpty());
+
+        dropFunc(connection, dbType);
+    }
+
+    @Test
+    void testExecuteFunction() throws SQLException {
+        createTable(connection, dbType);
+        createFunc(connection, dbType);
+
+        List<Map<String, Object>> result = DBManager.executeFunction(connection, dbType, "SYSDBA", "ADD_NUMBERS", 10, 20);
+        Assertions.assertEquals(result.size(), 1);
+
+        Map<String, Object> expectMap = new HashMap<>();
+        expectMap.put("RESULT", 30);
+        List<Map<String, Object>> expect = new ArrayList<>();
+        expect.add(expectMap);
+
+        Assertions.assertEquals(expect, result);
+
+        // more test cases
+        try {
+            DBManager.executeFunction(connection, dbType, "SYSDBA", "fakeFunction", 10, 20);
+            Assertions.fail();
+        } catch (SQLException e) {
+            //pass
+        }
+
+        try {
+            DBManager.executeFunction(connection, dbType, "SYSDBA", "add_numbers", 10);
+            Assertions.fail();
+        } catch (SQLException e) {
+            //pass
+        }
+
+        Assertions.assertEquals(expect, DBManager.executeFunction(connection, dbType, null, "add_numbers", 10, 20));
+
+        result = DBManager.executeFunction(connection, dbType, "SYSDBA", "add_numbers", 10, "abc");
+        expectMap.put("RESULT", 10);
+        Assertions.assertEquals(expect, result);
+
+        dropFunc(connection, dbType);
+    }
+
+    @Test
     void testMultiTypeData() throws SQLException, ClassNotFoundException {
-        Connection connection = DBManager.createConnection(driver, url, username, password);
         String sql = """
                 CREATE TABLE MyTable
-                  (
-                      MyDecimal   REAL,          -- SQLite does not have a DECIMAL type, use REAL
-                      MyDateTime TEXT,          -- Store as TEXT in format "YYYY-MM-DD HH:MM:SS.SSS"
-                      MyBlob      BLOB           -- Store as BLOB
-                  );
+                (
+                    MY_DECIMAL   NUMBER(10, 2),   -- Oracle uses NUMBER instead of DECIMAL
+                    MY_DATE      DATE,            -- Date type
+                    MY_TIME      INTERVAL DAY TO SECOND,  -- Oracle does not directly support TIME type, so INTERVAL DAY TO SECOND is used to store time
+                    MY_TIME_STAMP TIMESTAMP,       -- Timestamp type
+                    MY_BINARY    RAW(50)          -- Oracle uses RAW for binary data
+                )
                 """;
         String insertData = """
                 INSERT INTO MyTable
                 (
-                  MyDecimal,
-                  MyDateTime,
-                  MyBlob
+                    MY_DECIMAL,
+                    MY_DATE,
+                    MY_TIME,
+                    MY_TIME_STAMP,
+                    MY_BINARY
                 )
                 VALUES
                 (
-                  1234.56,                  -- Numeric value
-                  '2023-05-31 12:34:56.789',-- Date and Time
-                  X'44424D61736B6572'             -- BLOB data, inserting the Hex representation of "DBMasker"
-                );
+                    1234.56,                       -- Numeric value
+                    TO_DATE('2023-05-31','YYYY-MM-DD'), -- Date
+                    INTERVAL '12:34:56' HOUR TO SECOND,   -- Time
+                    TO_TIMESTAMP('2023-05-31 12:34:56', 'YYYY-MM-DD HH24:MI:SS'), -- Timestamp
+                    HEXTORAW('44424D61736B6572')  -- Binary data, inserting the Hex representation of "DBMasker"
+                )
                 """;
         List<String> sqlList = new ArrayList<>();
         sqlList.add(sql);
         sqlList.add(insertData);
         DBManager.executeUpdateSQLBatch(connection, dbType, sqlList);
 
-        List<Map<String, Object>> result = DBManager.getTableOrViewData(connection, dbType, "", "MyTable");
+        List<Map<String, Object>> result = DBManager.getTableOrViewData(connection, dbType, "SYSDBA", "MyTable");
         Assertions.assertEquals(result.size(), 1);
+
         Map<String, Object> expectMap = new HashMap<>();
-        expectMap.put("MyDecimal", Double.parseDouble("1234.56"));
+        expectMap.put("MY_DECIMAL", "1234.56");
 
-        expectMap.put("MyDateTime", "2023-05-31 12:34:56.789");
+        LocalDate localDate = LocalDate.parse("2023-05-31");
+        ZoneId defaultZoneId = ZoneId.systemDefault();
+        Instant instant = localDate.atStartOfDay(defaultZoneId).toInstant();
+        Date date = Date.from(instant);
+        expectMap.put("MY_DATE", date);
 
-        expectMap.put("MyBlob", "DBMasker".getBytes());
+        expectMap.put("MY_TIME_STAMP", new TIMESTAMP(Timestamp.valueOf("2023-05-31 12:34:56")));
 
-        Assertions.assertEquals(expectMap.get("MyDecimal"), result.get(0).get("MyDecimal"));
-        Assertions.assertEquals(expectMap.get("MyDateTime"), result.get(0).get("MyDateTime"));
-        Assertions.assertArrayEquals((byte[]) expectMap.get("MyBlob"), (byte[]) result.get(0).get("MyBlob"));
+        expectMap.put("MY_BINARY", "DBMasker".getBytes());
+
+        Assertions.assertEquals(expectMap.get("MY_DECIMAL"), result.get(0).get("MY_DECIMAL").toString());
+        Assertions.assertEquals(expectMap.get("MY_DATE"), result.get(0).get("MY_DATE"));
+        Assertions.assertEquals("+000000 12:34:56", result.get(0).get("MY_TIME").toString());
+        Assertions.assertEquals("2023-05-31 12:34:56.0", result.get(0).get("MY_TIME_STAMP").toString());
+        Assertions.assertArrayEquals((byte[]) expectMap.get("MY_BINARY"), (byte[]) result.get(0).get("MY_BINARY"));
     }
 }

@@ -54,6 +54,7 @@ public class DialectFactory {
             case HIVE -> new HiveDialect();
             case PHOENIX -> new PhoenixDialect();
             case OCEANBASE -> new OceanBaseDialect();
+            case OSCAR -> new OscarDialect();
             default -> throw new UnsupportedOperationException(ErrorMessages.UNSUPPORTED_DATABASE_TYPE_ERROR + dbType);
         };
     }
